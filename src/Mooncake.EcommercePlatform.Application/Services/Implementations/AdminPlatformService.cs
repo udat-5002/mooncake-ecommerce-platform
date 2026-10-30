@@ -2,6 +2,7 @@ namespace Mooncake.EcommercePlatform.Application.Services.Implementations;
 
 using System.Text.Json;
 using Mooncake.EcommercePlatform.Application.Common.Exceptions;
+using Mooncake.EcommercePlatform.Application.Common.Helpers;
 using Mooncake.EcommercePlatform.Application.Common.Interfaces;
 using Mooncake.EcommercePlatform.Application.DTOs.Admin;
 using Mooncake.EcommercePlatform.Application.Services.Interfaces;
@@ -95,6 +96,8 @@ public sealed class AdminPlatformService(IAdminPlatformRepository repository, IU
     public async Task<ContractDepositRuleResponse> SaveContractDepositRuleAsync(Guid? ruleId, SaveContractDepositRuleRequest request,
         Guid actorId, string? ipAddress, CancellationToken cancellationToken = default)
     {
+        MoneyHelper.RequireAmount(request.DepositPercentage, 0.01m, 100m);
+        MoneyHelper.RequireAmount(request.MinContractValue);
         var rule = ruleId.HasValue
             ? await repository.GetContractDepositRuleAsync(ruleId.Value, cancellationToken) ?? throw new HttpException(404, "Deposit rule was not found.")
             : new ContractDepositRule { Id = Guid.NewGuid(), CreatedAt = dateTimeProvider.UtcNow, CreatedBy = actorId };

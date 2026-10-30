@@ -47,7 +47,7 @@ public sealed record SubmitBidRequest
 public sealed record SubmitBidItemRequest
 {
     [Required] public Guid RfqItemId { get; init; }
-    [Range(typeof(decimal), "0.01", "999999999999")] public decimal UnitPrice { get; init; }
+    [Range(typeof(decimal), "0.01", "9999999999.99")] public decimal UnitPrice { get; init; }
     [MaxLength(1000)] public string? Notes { get; init; }
 }
 

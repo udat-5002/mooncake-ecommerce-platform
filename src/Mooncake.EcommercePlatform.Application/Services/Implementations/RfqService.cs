@@ -1,6 +1,7 @@
 namespace Mooncake.EcommercePlatform.Application.Services.Implementations;
 
 using Mooncake.EcommercePlatform.Application.Common.Exceptions;
+using Mooncake.EcommercePlatform.Application.Common.Helpers;
 using Mooncake.EcommercePlatform.Application.Common.Interfaces;
 using Mooncake.EcommercePlatform.Application.DTOs.Rfqs.Requests;
 using Mooncake.EcommercePlatform.Application.DTOs.Rfqs.Responses;
@@ -156,6 +157,8 @@ public sealed class RfqService(IRfqRepository repository, IDateTimeProvider cloc
             || request.Items.Any(item => rfqItems.All(rfqItem => rfqItem.Id != item.RfqItemId)))
             throw new HttpException(400, "A bid must include a price for every RFQ item exactly once.");
         var rfqItemMap = rfqItems.ToDictionary(item => item.Id);
+        foreach (var item in request.Items)
+            MoneyHelper.RequireAmount(item.UnitPrice, 0.01m);
         var now = clock.UtcNow;
         var bid = new Bid
         {
@@ -181,6 +184,7 @@ public sealed class RfqService(IRfqRepository repository, IDateTimeProvider cloc
             CreatedBy = supplierUserId
         }).ToList();
         bid.TotalPrice = items.Sum(item => item.Subtotal);
+        MoneyHelper.RequireAmount(bid.TotalPrice);
         if (!await repository.CreateBidAsync(bid, items, cancellationToken))
             throw new HttpException(409, "This supplier has already submitted a bid for this RFQ.");
         return await ToBidResponseAsync(bid, cancellationToken);
@@ -282,6 +286,10 @@ public sealed class RfqService(IRfqRepository repository, IDateTimeProvider cloc
 
     private void ValidateRequest(CreateRfqRequest request)
     {
+        MoneyHelper.RequireAmount(request.BudgetRangeMin);
+        MoneyHelper.RequireAmount(request.BudgetRangeMax);
+        foreach (var item in request.Items)
+            MoneyHelper.RequireAmount(item.TargetPrice);
         var today = DateOnly.FromDateTime(clock.UtcNow);
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.DeliveryAddress)
             || request.Items.Count == 0 || request.Items.Any(item => string.IsNullOrWhiteSpace(item.ProductName)

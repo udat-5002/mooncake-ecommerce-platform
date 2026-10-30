@@ -72,6 +72,7 @@ public sealed class PromotionService(IPromotionRepository repository, IDateTimeP
 
     private async Task ValidateAsync(Guid shopId, SavePromotionRequest request, Guid? exceptPromotionId, CancellationToken cancellationToken)
     {
+        MoneyHelper.RequireAmount(request.DiscountValue, 0.01m);
         if (!Enum.IsDefined(request.DiscountType))
             throw new HttpException(400, "The selected discount type is invalid.");
         if (request.MaxQty.HasValue && request.MaxQty.Value < request.MinQty)

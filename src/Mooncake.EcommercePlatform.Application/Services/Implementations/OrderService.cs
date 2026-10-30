@@ -66,6 +66,7 @@ public sealed class OrderService(IOrderRepository repository, IDateTimeProvider 
                 throw new HttpException(409, $"Insufficient stock for variant '{variant.Sku}'.");
 
             var unitPrice = product.BasePrice + variant.PriceAdjustment;
+            MoneyHelper.RequireAmount(unitPrice, 0.01m);
             var lineTotal = decimal.Round(unitPrice * requestedItem.Quantity, 2, MidpointRounding.AwayFromZero);
             var discountedUnitPrice = GetDiscountedUnitPrice(unitPrice, requestedItem.Quantity, product.Id, promotions, now);
             var lineDiscount = decimal.Round((unitPrice - discountedUnitPrice) * requestedItem.Quantity, 2, MidpointRounding.AwayFromZero);
@@ -87,6 +88,8 @@ public sealed class OrderService(IOrderRepository repository, IDateTimeProvider 
 
         subtotal = decimal.Round(subtotal, 2, MidpointRounding.AwayFromZero);
         discountTotal = decimal.Round(discountTotal, 2, MidpointRounding.AwayFromZero);
+        MoneyHelper.RequireAmount(subtotal);
+        MoneyHelper.RequireAmount(discountTotal);
         var order = new Order
         {
             CustomerId = customerId,
